@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Presupuestos Pro</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+            position: relative;
+        }
+
+        /* Botón de Configuración Superior Derecha */
+        .config-trigger {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            font-size: 24px;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+        .config-trigger:hover {
+            transform: rotate(45deg);
+        }
+
+        /* Sistema de pestañas */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Formularios y Grids */
+        .grid-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        /* Buscadores Dinámicos */
+        .search-results {
+            border: 1px solid var(--border-color);
+            border-top: none;
+            max-height: 150px;
+            overflow-y: auto;
+            background: white;
+            position: absolute;
+            width: 100%;
+            z-index: 5;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 0 0 6px 6px;
+        }
+        .search-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .search-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        button.btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table th, table td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        table th {
+            background-color: #f1f5f9;
+        }
+
+        .budget-builder {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 20px;
+        }
+
+        /* Vista de Impresión / Presupuesto */
+        #invoice-preview {
+            border: 2px solid #000;
+            padding: 30px;
+            background: white;
+            color: #000;
+            min-height: 600px;
+        }
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .preview-logo {
+            max-width: 150px;
+            max-height: 80px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .invoice-parties {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .invoice-totals {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 16px;
+        }
+        .invoice-notes {
+            margin-top: 30px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 15px;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        @media (max-width: 850px) {
+            .budget-builder { grid-template-columns: 1fr; }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #invoice-preview, #invoice-preview * { visibility: visible; }
+            #invoice-preview { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Sistema de Gestión de Presupuestos</h1>
+        <button class="config-trigger" onclick="openTab('configuracion')" title="Configuración de Empresa">⚙️</button>
+    </header>
+
+    <div class="tabs no-print">
+        <button class="tab-btn active" id="btn-presupuesto" onclick="openTab('presupuesto')">Crear Presupuesto</button>
+        <button class="tab-btn" onclick="openTab('clientes')">Clientes</button>
+        <button class="tab-btn" onclick="openTab('inventario')">Inventario / Artículos</button>
+    </div>
+
+    <div id="presupuesto" class="tab-content active">
+        <div class="budget-builder">
+            <div class="no-print">
+                <h3>1. Buscar y Asignar Cliente</h3>
+                <div class="form-group" style="position: relative;">
+                    <label>Escriba Nombre o NIT del Cliente:</label>
+                    <input type="text" id="search-client" autocomplete="off" placeholder="Buscar cliente..." oninput="filterClients(this.value)">
+                    <div id="client-search-results" class="search-results" style="display:none;"></div>
+                </div>
+                <p id="selected-client-status" style="font-size: 13px; color: #059669; font-weight: bold;"></p>
+
+                <h3>2. Buscar e Insertar Artículo</h3>
+                <div class="form-group" style="position: relative;">
+                    <label>Escriba EAN o Descripción:</label>
+                    <input type="text" id="search-item" autocomplete="off" placeholder="Buscar artículo del inventario..." oninput="filterInventory(this.value)">
+                    <div id="item-search-results" class="search-results" style="display:none;"></div>
+                </div>
+
+                <form id="budget-item-form" onsubmit="addBudgetProduct(event)">
+                    <input type="hidden" id="b-item-ean">
+                    <div class="form-group">
+                        <label>Artículo Seleccionado:</label>
+                        <input type="text" id="b-item-desc" readonly placeholder="Seleccione desde el buscador de arriba" required>
+                    </div>
+                    <div class="grid-form" style="grid-template-columns: 1fr 1fr; margin-bottom:0;">
+                        <div class="form-group">
+                            <label>Precio ($):</label>
+                            <input type="number" id="b-item-price" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad:</label>
+                            <input type="number" id="b-item-qty" value="1" min="1" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Agregar al Presupuesto</button>
+                </form>
+
+                <button class="btn-primary" style="background-color: #10b981; width: 100%; margin-top: 30px; font-size: 16px;" onclick="window.print()">
+                    🖨️ Imprimir / Guardar PDF
+                </button>
+            </div>
+
+            <div>
+                <h3 class="no-print">Vista Previa del Presupuesto</h3>
+                <div id="invoice-preview">
+                    <div class="invoice-header">
+                        <div>
+                            <img id="view-logo" class="preview-logo" src="" alt="Logo Empresa">
+                            <div id="view-co-details">
+                                <strong id="p-co-name">Mi Empresa</strong><br>
+                                <span id="p-co-nit">NIT: 000000</span><br>
+                                <span id="p-co-dir">Dirección</span> - <span id="p-co-city">Ciudad</span><br>
+                                <span id="p-co-contact">Tel: | Email: </span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <h2 style="margin: 0; color: var(--primary-color);">PRESUPUESTO</h2>
+                            <p style="margin: 5px 0 0 0;">Fecha: <span id="p-date">--/--/----</span></p>
+                        </div>
+                    </div>
+
+                    <div class="invoice-parties">
+                        <div>
+                            <strong>DATOS DEL CLIENTE:</strong><br>
+                            <span id="p-cl-name" style="font-weight: 600;">No se ha seleccionado cliente</span><br>
+                            <span id="p-cl-nit"></span><br>
+                            <span id="p-cl-dir"></span><br>
+                            <span id="p-cl-contact"></span>
+                        </div>
+                    </div>
+
+                    <table id="p-table">
+                        <thead>
+                            <tr>
+                                <th>EAN / Descripción</th>
+                                <th style="text-align: right; width: 60px;">Cant.</th>
+                                <th style="text-align: right; width: 110px;">Precio Unit.</th>
+                                <th style="text-align: right; width: 110px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+
+                    <div class="invoice-totals">
+                        <p><strong>Subtotal:</strong> <span id="p-subtotal">$0.00</span></p>
+                        <p><strong>IVA (19%):</strong> <span id="p-iva">$0.00</span></p>
+                        <hr style="border:0; border-top:1px solid #000; width:40%; margin-right:0;">
+                        <p style="font-size: 18px;"><strong>TOTAL:</strong> <span id="p-total" style="font-weight:bold;">$0.00</span></p>
+                    </div>
+
+                    <div class="invoice-notes">
+                        <strong>Términos, Condiciones y Garantías:</strong>
+                        <p id="p-notes" style="margin: 5px 0 0 0; white-space: pre-wrap;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="clientes" class="tab-content">
+        <h2>Registro de Clientes</h2>
+        <form id="client-form" onsubmit="saveClient(event)">
+            <div class="grid-form">
+                <div class="form-group"><label>NIT / Documento:</label><input type="text" id="c-nit" required></div>
+                <div class="form-group"><label>Nombre Completo:</label><input type="text" id="c-name" required></div>
+                <div class="form-group"><label>Dirección:</label><input type="text" id="c-dir" required></div>
+                <div class="form-group"><label>Código Postal:</label><input type="text" id="c-zip"></div>
+                <div class="form-group"><label>Ciudad:</label><input type="text" id="c-city" required></div>
+                <div class="form-group"><label>Teléfono:</label><input type="tel" id="c-phone" required></div>
+                <div class="form-group"><label>Email:</label><input type="email" id="c-email" required></div>
+            </div>
+            <button type="submit" class="btn-primary">Guardar Cliente</button>
+        </form>
+
+        <h3>Clientes Almacenados</h3>
+        <table id="clients-table">
+            <thead>
+                <tr><th>NIT</th><th>Nombre</th><th>Dirección</th><th>Ciudad</th><th>Teléfono</th><th>Email</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="inventario" class="tab-content">
+        <h2>Inventario de Artículos</h2>
+        <form id="inventory-form" onsubmit="saveInventoryProduct(event)">
+            <div class="grid-form">
+                <div class="form-group"><label>Código EAN:</label><input type="text" id="i-ean" placeholder="Ej: 7701234567890" required></div>
+                <div class="form-group"><label>Descripción del Artículo:</label><input type="text" id="i-desc" required></div>
+                <div class="form-group"><label>Precio de Venta ($):</label><input type="number" id="i-price" step="0.01" required></div>
+            </div>
+            <button type="submit" class="btn-primary">Agregar al Inventario</button>
+        </form>
+
+        <h3>Artículos en Stock</h3>
+        <table id="inventory-table">
+            <thead>
+                <tr><th>Código EAN</th><th>Descripción</th><th>Precio Base</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="configuracion" class="tab-content">
+        <h2>⚙️ Configuración de Empresa</h2>
+        <form id="config-form" onsubmit="saveCompanyConfig(event)">
+            <div class="grid-form">
+                <div class="form-group"><label>NIT de la Empresa:</label><input type="text" id="co-nit" required></div>
+                <div class="form-group"><label>Nombre Comercial:</label><input type="text" id="co-name" required></div>
+                <div class="form-group"><label>Dirección:</label><input type="text" id="co-dir" required></div>
+                <div class="form-group"><label>Código Postal:</label><input type="text" id="co-zip"></div>
+                <div class="form-group"><label>Ciudad:</label><input type="text" id="co-city" required></div>
+                <div class="form-group"><label>Teléfono:</label><input type="tel" id="co-phone" required></div>
+                <div class="form-group"><label>Email:</label><input type="email" id="co-email" required></div>
+            </div>
+            <div class="form-group">
+                <label>Logo de la Empresa:</label>
+                <input type="file" id="co-logo" accept="image/*" onchange="handleLogoUpload(this)">
+            </div>
+            <div class="form-group">
+                <label>Notas del Presupuesto (Tiempos de garantía, exclusiones, cláusulas):</label>
+                <textarea id="co-notes" rows="4" placeholder="Indique aquí los términos de las garantías..."></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Guardar Todo</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Variables de Estado (Carga y Persistencia en localhost / localStorage)
+    let clients = JSON.parse(localStorage.getItem('clients')) || [];
+    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+    let company = JSON.parse(localStorage.getItem('company')) || {
+        nit: '900.000.000-1', name: 'Mi Empresa SAS', address: 'Av Principal 45', zip: '11001', city: 'Bogotá', phone: '30012345', email: 'info@empresa.com', logo: '', notes: 'Garantía de 6 meses en partes eléctricas.\nNo cubre daños provocados por golpes o humedad.'
+    };
+    
+    // Variables temporales del presupuesto actual
+    let selectedClient = null;
+    let budgetItems = [];
+
+    // Cambiar de Pestaña
+    function openTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        
+        const tabBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+        if(tabBtn) tabBtn.classList.add('active');
+
+        if(tabId === 'presupuesto') updateInvoicePreview();
+    }
+
+    // --- LOGO (Conversión Base64 para guardado local) ---
+    function handleLogoUpload(input) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                company.logo = e.target.result; // URL en Base64
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // --- GUARDAR CONFIGURACIÓN EMPRESA ---
+    function saveCompanyConfig(e) {
+        e.preventDefault();
+        company.nit = document.getElementById('co-nit').value;
+        company.name = document.getElementById('co-name').value;
+        company.address = document.getElementById('co-dir').value;
+        company.zip = document.getElementById('co-zip').value;
+        company.city = document.getElementById('co-city').value;
+        company.phone = document.getElementById('co-phone').value;
+        company.email = document.getElementById('co-email').value;
+        company.notes = document.getElementById('co-notes').value;
+
+        localStorage.setItem('company', JSON.stringify(company));
+        alert('Configuración corporativa guardada.');
+        openTab('presupuesto');
+    }
+
+    function loadCompanyForm() {
+        document.getElementById('co-nit').value = company.nit;
+        document.getElementById('co-name').value = company.name;
+        document.getElementById('co-dir').value = company.address;
+        document.getElementById('co-zip').value = company.zip;
+        document.getElementById('co-city').value = company.city;
+        document.getElementById('co-phone').value = company.phone;
+        document.getElementById('co-email').value = company.email;
+        document.getElementById('co-notes').value = company.notes;
+    }
+
+    // --- CLIENTES ---
+    function saveClient(e) {
+        e.preventDefault();
+        const newClient = {
+            nit: document.getElementById('c-nit').value,
+            name: document.getElementById('c-name').value,
+            address: document.getElementById('c-dir').value,
+            zip: document.getElementById('c-zip').value,
+            city: document.getElementById('c-city').value,
+            phone: document.getElementById('c-phone').value,
+            email: document.getElementById('c-email').value
+        };
+        clients.push(newClient);
+        localStorage.setItem('clients', JSON.stringify(clients));
+        document.getElementById('client-form').reset();
+        renderClients();
+        alert('Cliente registrado.');
+    }
+
+    function renderClients() {
+        const tbody = document.querySelector('#clients-table tbody');
+        tbody.innerHTML = '';
+        clients.forEach(c => {
+            tbody.innerHTML += `<tr><td>${c.nit}</td><td>${c.name}</td><td>${c.address}</td><td>${c.city}</td><td>${c.phone}</td><td>${c.email}</td></tr>`;
+        });
+    }
+
+    // --- INVENTARIO ---
+    function saveInventoryProduct(e) {
+        e.preventDefault();
+        const newProd = {
+            ean: document.getElementById('i-ean').value,
+            desc: document.getElementById('i-desc').value,
+            price: parseFloat(document.getElementById('i-price').value)
+        };
+        inventory.push(newProd);
+        localStorage.setItem('inventory', JSON.stringify(inventory));
+        document.getElementById('inventory-form').reset();
+        renderInventory();
+        alert('Artículo añadido al inventario.');
+    }
+
+    function renderInventory() {
+        const tbody = document.querySelector('#inventory-table tbody');
+        tbody.innerHTML = '';
+        inventory.forEach(i => {
+            tbody.innerHTML += `<tr><td>${i.ean}</td><td>${i.desc}</td><td>$${i.price.toLocaleString('es-CO')}</td></tr>`;
+        });
+    }
+
+    // --- BUSCADORES EN PANTALLA PRINCIPAL ---
+    function filterClients(query) {
+        const resultsDiv = document.getElementById('client-search-results');
+        if (!query) { resultsDiv.style.display = 'none'; return; }
+        
+        const filtered = clients.filter(c => c.name.toLowerCase().includes(query.toLowerCase()) || c.nit.includes(query));
+        
+        if(filtered.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-item">Sin coincidencias</div>';
+        } else {
+            resultsDiv.innerHTML = '';
+            filtered.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'search-item';
+                item.innerText = `${c.name} (NIT: ${c.nit})`;
+                item.onclick = () => selectClientForBudget(c);
+                resultsDiv.appendChild(item);
+            });
+        }
+        resultsDiv.style.display = 'block';
+    }
+
+    function selectClientForBudget(client) {
+        selectedClient = client;
+        document.getElementById('search-client').value = client.name;
+        document.getElementById('client-search-results').style.display = 'none';
+        document.getElementById('selected-client-status').innerText = `✓ Cliente: ${client.name}`;
+        updateInvoicePreview();
+    }
+
+    function filterInventory(query) {
+        const resultsDiv = document.getElementById('item-search-results');
+        if (!query) { resultsDiv.style.display = 'none'; return; }
+
+        const filtered = inventory.filter(i => i.desc.toLowerCase().includes(query.toLowerCase()) || i.ean.includes(query));
+
+        if(filtered.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-item">Sin resultados en inventario</div>';
+        } else {
+            resultsDiv.innerHTML = '';
+            filtered.forEach(i => {
+                const item = document.createElement('div');
+                item.className = 'search-item';
+                item.innerText = `[${i.ean}] ${i.desc} - $${i.price}`;
+                item.onclick = () => selectItemForBudget(i);
+                resultsDiv.appendChild(item);
+            });
+        }
+        resultsDiv.style.display = 'block';
+    }
+
+    function selectItemForBudget(item) {
+        document.getElementById('b-item-ean').value = item.ean;
+        document.getElementById('b-item-desc').value = item.desc;
+        document.getElementById('b-item-price').value = item.price;
+        document.getElementById('b-item-qty').value = 1;
+        document.getElementById('search-item').value = '';
+        document.getElementById('item-search-results').style.display = 'none';
+    }
+
+    // --- AGREGAR ARTÍCULO AL PRESUPUESTO ACTUAL ---
+    function addBudgetProduct(e) {
+        e.preventDefault();
+        const ean = document.getElementById('b-item-ean').value;
+        const desc = document.getElementById('b-item-desc').value;
+        const price = parseFloat(document.getElementById('b-item-price').value);
+        const qty = parseInt(document.getElementById('b-item-qty').value);
+
+        budgetItems.push({ ean, desc, price, qty });
+        
+        // Limpiar controles inferiores
+        document.getElementById('budget-item-form').reset();
+        updateInvoicePreview();
+    }
+
+    function removeBudgetItem(index) {
+        budgetItems.splice(index, 1);
+        updateInvoicePreview();
+    }
+
+    // --- ACTUALIZAR VISTA PREVIA DEL PRESUPUESTO ---
+    function updateInvoicePreview() {
+        // 1. Datos e Imagen de la Empresa
+        const logoImg = document.getElementById('view-logo');
+        if (company.logo) {
+            logoImg.src = company.logo;
+            logoImg.style.display = 'block';
+        } else {
+            logoImg.style.display = 'none';
+        }
+
+        document.getElementById('p-co-name').innerText = company.name;
+        document.getElementById('p-co-nit').innerText = `NIT: ${company.nit}`;
+        document.getElementById('p-co-dir').innerText = company.address;
+        document.getElementById('p-co-city').innerText = company.city;
+        document.getElementById('p-co-contact').innerText = `Tel: ${company.phone} | Email: ${company.email}`;
+        document.getElementById('p-notes').innerText = company.notes;
+        document.getElementById('p-date').innerText = new Date().toLocaleDateString();
+
+        // 2. Datos del Cliente Asignado
+        if (selectedClient) {
+            document.getElementById('p-cl-name').innerText = selectedClient.name;
+            document.getElementById('p-cl-nit').innerText = `NIT / CC: ${selectedClient.nit}`;
+            document.getElementById('p-cl-dir').innerText = `${selectedClient.address} - CP: ${selectedClient.zip || 'N/A'}`;
+            document.getElementById('p-cl-contact').innerText = `Tel: ${selectedClient.phone} | Email: ${selectedClient.email}`;
+        } else {
+            document.getElementById('p-cl-name').innerText = "No se ha seleccionado cliente";
+            document.getElementById('p-cl-nit').innerText = "";
+            document.getElementById('p-cl-dir').innerText = "";
+            document.getElementById('p-cl-contact').innerText = "";
+        }
+
+        // 3. Renderizar filas en la tabla del Presupuesto
+        const tbody = document.querySelector('#p-table tbody');
+        tbody.innerHTML = '';
+        let subtotal = 0;
+
+        budgetItems.forEach((item, index) => {
+            const totalRow = item.price * item.qty;
+            subtotal += totalRow;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <strong>${item.ean ? '['+item.ean+'] ' : ''}</strong>${item.desc}
+                    <span class="no-print" style="color:red; cursor:pointer; margin-left:10px; font-size:12px;" onclick="removeBudgetItem(${index})">[Eliminar]</span>
+                </td>
+                <td style="text-align: right;">${item.qty}</td>
+                <td style="text-align: right;">$${item.price.toLocaleString('es-CO', {minimumFractionDigits:2})}</td>
+                <td style="text-align: right;">$${totalRow.toLocaleString('es-CO', {minimumFractionDigits:2})}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // 4. Totales con el 19% de IVA
+        const iva = subtotal * 0.19;
+        const total = subtotal + iva;
+
+        document.getElementById('p-subtotal').innerText = `$${subtotal.toLocaleString('es-CO', {minimumFractionDigits:2})}`;
+        document.getElementById('p-iva').innerText = `$${iva.toLocaleString('es-CO', {minimumFractionDigits:2})}`;
+        document.getElementById('p-total').innerText = `$${total.toLocaleString('es-CO', {minimumFractionDigits:2})}`;
+    }
+
+    // Cerrar los menús de búsqueda si se hace clic fuera de ellos
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#search-client')) document.getElementById('client-search-results').style.display = 'none';
+        if (!e.target.closest('#search-item')) document.getElementById('item-search-results').style.display = 'none';
+    });
+
+    // Carga inicial
+    window.onload = function() {
+        renderClients();
+        renderInventory();
+        loadCompanyForm();
+        updateInvoicePreview();
+    };
+</script>
+</body>
+</html>
